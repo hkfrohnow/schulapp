@@ -22,7 +22,7 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError("E-Mail oder Passwort ist falsch.");
+      setError(error.message);
       setLoading(false);
       return;
     }
