@@ -28,14 +28,12 @@ export default async function TimetablePage() {
       .eq("parent_id", user.id);
     classNames = [...new Set((students || []).map((s) => s.class_name))];
   } else if (profile.role === "teacher") {
-    // Lehrkraft sieht Klassen, in denen sie unterrichtet
     const { data: entries } = await supabase
       .from("timetable_entries")
       .select("class_name")
       .eq("teacher_id", user.id);
     classNames = [...new Set((entries || []).map((e) => e.class_name))];
 
-    // Fallback: alle Klassen, wenn keine eigenen Eintraege
     if (classNames.length === 0) {
       const { data: allEntries } = await supabase
         .from("timetable_entries")
@@ -43,7 +41,6 @@ export default async function TimetablePage() {
       classNames = [...new Set((allEntries || []).map((e) => e.class_name))];
     }
   } else {
-    // Admin sieht alle Klassen
     const { data: allEntries } = await supabase
       .from("timetable_entries")
       .select("class_name");
@@ -51,7 +48,6 @@ export default async function TimetablePage() {
   }
 
   classNames.sort();
-
   const selectedClass = classNames[0] || null;
 
   let entries: Array<{
@@ -80,7 +76,32 @@ export default async function TimetablePage() {
     }));
   }
 
-  // Kinder-Info fuer Eltern
+  // Alerts fuer diese Woche laden
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+
+  const entryIds = entries.map((e) => e.id);
+  let alerts: Array<{
+    id: string;
+    timetable_entry_id: string;
+    alert_date: string;
+    alert_type: string;
+    message: string;
+  }> = [];
+
+  if (entryIds.length > 0) {
+    const { data } = await supabase
+      .from("timetable_alerts")
+      .select("id, timetable_entry_id, alert_date, alert_type, message")
+      .in("timetable_entry_id", entryIds)
+      .gte("alert_date", monday.toISOString().split("T")[0])
+      .lte("alert_date", friday.toISOString().split("T")[0]);
+    alerts = data || [];
+  }
+
   let studentNames: Record<string, string> = {};
   if (profile.role === "parent") {
     const { data: students } = await supabase
@@ -98,10 +119,12 @@ export default async function TimetablePage() {
       <main className="max-w-5xl mx-auto px-4 py-8">
         <TimetableView
           entries={entries}
+          alerts={alerts}
           classNames={classNames}
           selectedClass={selectedClass}
           studentNames={studentNames}
           userRole={profile.role}
+          userId={user.id}
         />
       </main>
     </div>
