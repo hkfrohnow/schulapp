@@ -37,11 +37,16 @@ export default function Navigation({
   useEffect(() => {
     async function fetchAlertCount() {
       const supabase = createClient();
-      const today = new Date().toISOString().split("T")[0];
+      const now = new Date();
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+      const friday = new Date(monday);
+      friday.setDate(monday.getDate() + 4);
       const { count } = await supabase
         .from("timetable_alerts")
         .select("*", { count: "exact", head: true })
-        .eq("alert_date", today);
+        .gte("alert_date", monday.toISOString().split("T")[0])
+        .lte("alert_date", friday.toISOString().split("T")[0]);
       setAlertCount(count || 0);
     }
     fetchAlertCount();
