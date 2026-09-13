@@ -19,11 +19,39 @@ export default async function BoardPage() {
 
   if (!profile) redirect("/login");
 
-  const { data: posts } = await supabase
+  let postsQuery = supabase
     .from("board_posts")
     .select("*, author:profiles(full_name, role)")
     .order("pinned", { ascending: false })
     .order("created_at", { ascending: false });
+
+  if (profile.role === "parent") {
+    postsQuery = postsQuery.eq("is_public", true);
+  }
+
+  const { data: posts } = await postsQuery;
+
+  const postIds = (posts || []).map((p: { id: string }) => p.id);
+  let comments: Array<{
+    id: string;
+    post_id: string;
+    author_id: string;
+    content: string;
+    created_at: string;
+    author: { full_name: string } | null;
+  }> = [];
+
+  if (postIds.length > 0) {
+    const { data } = await supabase
+      .from("board_comments")
+      .select("*, author:profiles!author_id(full_name)")
+      .in("post_id", postIds)
+      .order("created_at", { ascending: true });
+    comments = (data || []).map((c) => ({
+      ...c,
+      author: c.author as unknown as { full_name: string } | null,
+    }));
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -31,6 +59,7 @@ export default async function BoardPage() {
       <main className="max-w-3xl mx-auto px-4 py-8">
         <BoardClient
           posts={posts || []}
+          comments={comments}
           userRole={profile.role}
           userId={user.id}
         />
