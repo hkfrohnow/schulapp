@@ -1,10 +1,12 @@
+
 "use client";
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MessageCircle, Plus, X, Search, User } from "lucide-react";
+import { MessageCircle, Plus, X, Search } from "lucide-react";
+import Avatar from "@/components/avatar";
 
 interface ConversationItem {
   id: string;
@@ -131,9 +133,7 @@ export default function ConversationList({
                   disabled={creating}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 transition text-left disabled:opacity-50"
                 >
-                  <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <User className="w-5 h-5 text-rose-500" />
-                  </div>
+                  <Avatar name={contact.full_name} />
                   <div>
                     <div className="font-medium text-gray-900">
                       {contact.full_name}
@@ -165,9 +165,7 @@ export default function ConversationList({
               href={`/messages/${conv.id}`}
               className="flex items-center gap-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md hover:border-gray-200 transition"
             >
-              <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="w-6 h-6 text-rose-500" />
-              </div>
+              <Avatar name={conv.other_user?.full_name || "?"} size="lg" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-gray-900">
