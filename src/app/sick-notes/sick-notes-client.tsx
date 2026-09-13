@@ -3,8 +3,14 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
-import { Plus, X, Heart, ThermometerSun, CheckCircle2, Calendar } from "lucide-react";
+import { Plus, X, Heart, ThermometerSun, CheckCircle2, Calendar, Eye } from "lucide-react";
 import type { UserRole, Student, SickNote } from "@/lib/types";
+
+interface ReadInfo {
+  sick_note_id: string;
+  reader: { full_name: string } | null;
+  read_at: string;
+}
 
 const REASONS = [
   "Krankheit",
@@ -18,11 +24,13 @@ export default function SickNotesClient({
   students,
   userRole,
   userId,
+  reads,
 }: {
   sickNotes: SickNote[];
   students: Student[];
   userRole: UserRole;
   userId: string;
+  reads: ReadInfo[];
 }) {
   const [showForm, setShowForm] = useState(false);
   const [studentId, setStudentId] = useState(students[0]?.id || "");
@@ -67,6 +75,15 @@ export default function SickNotesClient({
       .from("sick_notes")
       .update({ status: "recovered", end_date: todayStr() })
       .eq("id", noteId);
+    router.refresh();
+  }
+
+  async function markAsRead(noteId: string) {
+    const supabase = createClient();
+    await supabase.from("sick_note_reads").insert({
+      sick_note_id: noteId,
+      reader_id: userId,
+    });
     router.refresh();
   }
 
@@ -246,8 +263,10 @@ export default function SickNotesClient({
                 userRole={userRole}
                 userId={userId}
                 onRecover={markRecovered}
+                onMarkRead={markAsRead}
                 formatDate={formatDate}
                 daysBetween={daysBetween}
+                noteReads={reads.filter((r) => r.sick_note_id === note.id)}
               />
             ))}
           </div>
@@ -278,8 +297,10 @@ export default function SickNotesClient({
                 userRole={userRole}
                 userId={userId}
                 onRecover={markRecovered}
+                onMarkRead={markAsRead}
                 formatDate={formatDate}
                 daysBetween={daysBetween}
+                noteReads={reads.filter((r) => r.sick_note_id === note.id)}
               />
             ))}
           </div>
@@ -294,19 +315,26 @@ function SickNoteCard({
   userRole,
   userId,
   onRecover,
+  onMarkRead,
   formatDate,
   daysBetween,
+  noteReads,
 }: {
   note: SickNote;
   userRole: UserRole;
   userId: string;
   onRecover: (id: string) => void;
+  onMarkRead: (id: string) => void;
   formatDate: (d: string) => string;
   daysBetween: (s: string, e: string) => number;
+  noteReads: ReadInfo[];
 }) {
   const isActive = note.status === "active";
   const canRecover = isActive && (note.reported_by === userId || userRole === "admin");
   const days = daysBetween(note.start_date, note.end_date);
+  const isTeacherOrAdmin = userRole === "teacher" || userRole === "admin";
+  const alreadyRead = noteReads.some((r) => r.reader?.full_name && noteReads.length > 0);
+  const iHaveRead = noteReads.some((r) => r.reader?.full_name !== undefined);
 
   return (
     <div
@@ -356,17 +384,37 @@ function SickNoteCard({
               Gemeldet von {note.reporter.full_name}
             </p>
           )}
+
+          {noteReads.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <Eye className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-xs text-blue-500">
+                Gesehen von {noteReads.map((r) => r.reader?.full_name).filter(Boolean).join(", ")}
+              </span>
+            </div>
+          )}
         </div>
 
-        {canRecover && (
-          <button
-            onClick={() => onRecover(note.id)}
-            className="flex items-center gap-1.5 text-sm text-green-600 bg-green-50 hover:bg-green-100 px-3 py-2 rounded-xl transition font-medium flex-shrink-0"
-          >
-            <Heart className="w-4 h-4" />
-            Gesundmelden
-          </button>
-        )}
+        <div className="flex flex-col gap-2 flex-shrink-0">
+          {canRecover && (
+            <button
+              onClick={() => onRecover(note.id)}
+              className="flex items-center gap-1.5 text-sm text-green-600 bg-green-50 hover:bg-green-100 px-3 py-2 rounded-xl transition font-medium"
+            >
+              <Heart className="w-4 h-4" />
+              Gesundmelden
+            </button>
+          )}
+          {isTeacherOrAdmin && isActive && !noteReads.some(() => true) && (
+            <button
+              onClick={() => onMarkRead(note.id)}
+              className="flex items-center gap-1.5 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl transition font-medium"
+            >
+              <Eye className="w-4 h-4" />
+              Gelesen
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
