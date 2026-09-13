@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase-client";
-import { ArrowLeft, Send, User } from "lucide-react";
+import { ArrowLeft, Send } from "lucide-react";
 import Link from "next/link";
+import Avatar from "@/components/avatar";
 
 interface ChatMessage {
   id: string;
@@ -151,9 +152,7 @@ export default function ChatView({
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
-          <User className="w-5 h-5 text-rose-500" />
-        </div>
+        <Avatar name={otherUser?.full_name || "?"} />
         <div>
           <div className="font-semibold text-gray-900">
             {otherUser?.full_name || "Unbekannt"}
