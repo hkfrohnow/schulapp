@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SchulApp",
-  description: "Die einfache Schul-App fuer Eltern und Lehrkraefte",
+  title: "MySchool",
+  description: "Die smarte Schul-App fuer Eltern und Lehrkraefte",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
