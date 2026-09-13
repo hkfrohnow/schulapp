@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
@@ -14,27 +15,37 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, badgeKey: null },
-  { href: "/board", label: "Pinnwand", icon: Megaphone, badgeKey: null },
-  { href: "/timetable", label: "Stundenplan", icon: CalendarDays, badgeKey: "alertCount" as const },
-  { href: "/sick-notes", label: "Krank", icon: ThermometerSun, badgeKey: null },
-  { href: "/messages", label: "Chat", icon: MessageCircle, badgeKey: null },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/board", label: "Pinnwand", icon: Megaphone },
+  { href: "/timetable", label: "Stundenplan", icon: CalendarDays },
+  { href: "/sick-notes", label: "Krank", icon: ThermometerSun },
+  { href: "/messages", label: "Chat", icon: MessageCircle },
 ];
 
 export default function Navigation({
   userName,
   userRole,
-  alertCount = 0,
+  alertCount: initialAlertCount,
 }: {
   userName: string;
   userRole: string;
   alertCount?: number;
 }) {
   const pathname = usePathname();
+  const [alertCount, setAlertCount] = useState(initialAlertCount || 0);
 
-  const badges: Record<string, number> = {
-    alertCount,
-  };
+  useEffect(() => {
+    async function fetchAlertCount() {
+      const supabase = createClient();
+      const today = new Date().toISOString().split("T")[0];
+      const { count } = await supabase
+        .from("timetable_alerts")
+        .select("*", { count: "exact", head: true })
+        .eq("alert_date", today);
+      setAlertCount(count || 0);
+    }
+    fetchAlertCount();
+  }, [pathname]);
 
   const roleLabels: Record<string, string> = {
     parent: "Elternteil",
@@ -60,7 +71,7 @@ export default function Navigation({
           <div className="flex items-center gap-1">
             {navItems.map((item) => {
               const active = pathname.startsWith(item.href);
-              const badgeCount = item.badgeKey ? badges[item.badgeKey] || 0 : 0;
+              const showBadge = item.href === "/timetable" && alertCount > 0;
               return (
                 <Link
                   key={item.href}
@@ -73,9 +84,9 @@ export default function Navigation({
                 >
                   <item.icon className="w-4 h-4" />
                   {item.label}
-                  {badgeCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">
-                      {badgeCount}
+                  {showBadge && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1 animate-pulse">
+                      {alertCount}
                     </span>
                   )}
                 </Link>
