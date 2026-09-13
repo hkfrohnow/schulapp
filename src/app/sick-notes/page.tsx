@@ -46,6 +46,20 @@ export default async function SickNotesPage() {
     sickNotes = data;
   }
 
+  // Lesebestaetigungen laden
+  const noteIds = (sickNotes || []).map((n: { id: string }) => n.id);
+  let reads: Array<{ sick_note_id: string; reader: { full_name: string } | null; read_at: string }> = [];
+  if (noteIds.length > 0) {
+    const { data } = await supabase
+      .from("sick_note_reads")
+      .select("sick_note_id, reader:profiles!reader_id(full_name), read_at")
+      .in("sick_note_id", noteIds);
+    reads = (data || []).map((r) => ({
+      ...r,
+      reader: r.reader as unknown as { full_name: string } | null,
+    }));
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation userName={profile.full_name} userRole={profile.role} />
@@ -55,6 +69,7 @@ export default async function SickNotesPage() {
           students={students || []}
           userRole={profile.role}
           userId={user.id}
+          reads={reads}
         />
       </main>
     </div>
