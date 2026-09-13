@@ -42,7 +42,7 @@ export default function Navigation({ userName, userRole }: { userName: string; u
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <School className="w-6 h-6 text-indigo-600" />
-            <span className="font-bold text-lg text-gray-900">SchulApp</span>
+            <span className="font-bold text-lg text-gray-900">MySchool</span>
           </div>
 
           <div className="flex items-center gap-1">
