@@ -14,15 +14,27 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/board", label: "Brett", icon: Megaphone },
-  { href: "/timetable", label: "Stundenplan", icon: CalendarDays },
-  { href: "/sick-notes", label: "Krank", icon: ThermometerSun },
-  { href: "/messages", label: "Chat", icon: MessageCircle },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, badgeKey: null },
+  { href: "/board", label: "Pinnwand", icon: Megaphone, badgeKey: null },
+  { href: "/timetable", label: "Stundenplan", icon: CalendarDays, badgeKey: "alertCount" as const },
+  { href: "/sick-notes", label: "Krank", icon: ThermometerSun, badgeKey: null },
+  { href: "/messages", label: "Chat", icon: MessageCircle, badgeKey: null },
 ];
 
-export default function Navigation({ userName, userRole }: { userName: string; userRole: string }) {
+export default function Navigation({
+  userName,
+  userRole,
+  alertCount = 0,
+}: {
+  userName: string;
+  userRole: string;
+  alertCount?: number;
+}) {
   const pathname = usePathname();
+
+  const badges: Record<string, number> = {
+    alertCount,
+  };
 
   const roleLabels: Record<string, string> = {
     parent: "Elternteil",
@@ -48,11 +60,12 @@ export default function Navigation({ userName, userRole }: { userName: string; u
           <div className="flex items-center gap-1">
             {navItems.map((item) => {
               const active = pathname.startsWith(item.href);
+              const badgeCount = item.badgeKey ? badges[item.badgeKey] || 0 : 0;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition ${
                     active
                       ? "bg-indigo-50 text-indigo-700"
                       : "text-gray-600 hover:bg-gray-50"
@@ -60,6 +73,11 @@ export default function Navigation({ userName, userRole }: { userName: string; u
                 >
                   <item.icon className="w-4 h-4" />
                   {item.label}
+                  {badgeCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">
+                      {badgeCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
